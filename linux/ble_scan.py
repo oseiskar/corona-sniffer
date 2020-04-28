@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """
 BLE sniffer for Linux. Requires hcidump and hcitool executables to
 be available (e.g., apt-get install bluez-hcidump). Run as root.

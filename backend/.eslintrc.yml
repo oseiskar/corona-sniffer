@@ -1,0 +1,8 @@
+extends: airbnb-base
+rules:
+  no-plusplus: off
+  no-prototype-builtins: off
+  no-multi-assign: off
+  comma-dangle: [error, never]
+env:
+  browser: true
