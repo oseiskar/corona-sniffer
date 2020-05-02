@@ -1,10 +1,14 @@
 const Koa = require('koa');
 const koaBody = require('koa-body');
+const db = require('./db');
 
 const app = new Koa();
 
 app.use(koaBody());
 app.use(ctx => {
+  const { client, scan } = ctx.request.body;
+  const rollingId = parseRollingId(scan);
+
   console.log(`received ${JSON.stringify(ctx.request.body)}`);
   ctx.body = `OK`;
 });

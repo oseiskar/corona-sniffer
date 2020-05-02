@@ -2,15 +2,18 @@
   "name": "corona-sniffer-demo-backend",
   "dependencies": {
     "koa": "^2.11.0",
-    "koa-body": "^4.1.1"
+    "koa-body": "^4.1.1",
+    "sqlite3": "^4.2.0"
   },
   "devDependencies": {
+    "crypto-random-string": "^3.2.0",
     "eslint": "^6.8.0",
     "eslint-config-airbnb-base": "^14.1.0",
-    "eslint-plugin-import": "^2.20.1"
+    "eslint-plugin-import": "^2.20.1",
+    "random-normal": "^1.0.0"
   },
   "scripts": {
     "server": "node server.js",
-    "lint": "./node_modules/.bin/eslint index.js"
+    "lint": "./node_modules/.bin/eslint *.js"
   }
 }
