@@ -3,6 +3,7 @@
 How "anonymous" is BLE contact tracing as proposed by [Apple & Google](https://www.apple.com/covid19/contacttracing)? A picture is worth more than a thousand words - it's about as anonymous as the simulated picture below - and this data is technically accessible to **any 3rd party who can install a large fleet of BLE-sniffing devices**, _not_ just the health authorities.
 
 ![simulated-data](.github/images/ble-sniffer-grid-simulation.png)
+
 _Simulated grid of 400 BLE sniffers over downtown Helsinki_
 
 The red circles correspond beacon signals recorded from infected individuals, who have voluntarily uploaded their positive infection status to the local health authorities. Blue circles are signals recorded from other people using the contact tracing service. As illustrated by the lines connecting the red dots, the route traveled by each infected & announced individual can be reconstructed within the range of the sniffer grid.
