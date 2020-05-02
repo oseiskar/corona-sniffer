@@ -18,6 +18,7 @@ See https://stackoverflow.com/a/23059924/1426569
 import subprocess
 import binascii
 import struct
+import time
 
 def parse_ibeacon(ads):
     if len(ads) != 1 or ads[0].type != '\xff': return None
@@ -137,6 +138,7 @@ class Scanner:
         try:
             return binascii.unhexlify(buf)
         except:
+            time.sleep(0.01) # avoid busy loop if stuck
             return ''
 
     def read(self):
