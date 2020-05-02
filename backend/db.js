@@ -13,16 +13,19 @@ function createTablesIfNeeded(db) {
         )`)
         .run(`
         CREATE TABLE IF NOT EXISTS contacts (
-          rolling_id text PRIMARY KEY,
+          rolling_id text NOT NULL,
           agent_id text NOT NULL,
           time text NOT NULL,
           json text NOT NULL,
           resolved_id text
         )`)
         .run(`
+        CREATE INDEX IF NOT EXISTS index_rolling_id
+          ON contacts(rolling_id)`)
+        .run(`
         CREATE INDEX IF NOT EXISTS index_resolved_id
           ON contacts(resolved_id)
-          WHERE resolved_id IS NOT NULL;
+          WHERE resolved_id IS NOT NULL
         `, (err) => (err ? reject(err) : resolve(true)));
     });
   });
@@ -78,7 +81,18 @@ function databaseApi(db) {
         UPDATE contacts SET resolved_id = ? WHERE rolling_id IN (${inList})`,
       [validated.id(resolvedId)].concat(rollingIds.map(validated.id)));
     },
-    getAll(cb) {
+    getResolved(each, finalize) {
+      db.each(`
+        SELECT * FROM contacts
+        INNER JOIN agents ON contacts.agent_id = agents.id
+        WHERE contacts.resolved_id IS NOT NULL
+      `,
+      (err, result) => {
+        if (err) throw err;
+        each(result);
+      }, finalize);
+    },
+    getAll(cb, finalize) {
       db.each(`
         SELECT * FROM contacts
         INNER JOIN agents ON contacts.agent_id = agents.id
@@ -86,7 +100,7 @@ function databaseApi(db) {
       (err, result) => {
         if (err) throw err;
         cb(result);
-      });
+      }, finalize);
     },
     clearAll() {
       console.log('clearing database');

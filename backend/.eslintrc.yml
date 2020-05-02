@@ -1,8 +1,7 @@
 extends: airbnb-base
 rules:
   no-console: off
+  no-param-reassign: off
   no-plusplus: off
   no-mixed-operators: off
   comma-dangle: [error, never]
-env:
-  browser: true

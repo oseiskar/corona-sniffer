@@ -28,9 +28,11 @@ function CoordinateTransforms(center) {
 }
 
 const CENTER = {
-  latitude: 60,
-  longitude: 24
+  // Helsinki, Finland
+  latitude: 60.1628855,
+  longitude: 24.94375
 };
+const SCALE_METERS = 1500;
 
 function linspace(min, max, num) {
   const a = [];
@@ -40,15 +42,16 @@ function linspace(min, max, num) {
   return a;
 }
 
-function randomWalk(startXY) {
+function randomWalk(startXY, scaleMeters) {
   let { x, y } = startXY;
 
-  const SIGMA_V = 0.1;
-  const V_DAMP = 0.1;
+  scaleMeters = SCALE_METERS * 0.2;
+  const SIGMA_V = scaleMeters / 100;
+  const V_DAMP = 0.03;
   const WALK_LENGTH = 200;
 
-  let vx = randomNormal({ dev: 5 * SIGMA_V });
-  let vy = randomNormal({ dev: 5 * SIGMA_V });
+  let vx = randomNormal({ dev: 10 * SIGMA_V });
+  let vy = randomNormal({ dev: 10 * SIGMA_V });
 
   const walk = [];
   for (let i = 0; i < WALK_LENGTH; ++i) {
@@ -67,11 +70,10 @@ function randomId() {
 }
 
 function generateAgents() {
-  const GRID_SIZE_M = 2000;
   const agents = [];
-  const s = GRID_SIZE_M * 0.5;
+  const s = SCALE_METERS * 0.5;
   const N_PER_ROW = 20;
-  const RANGE_M = 50;
+  const RANGE_M = 30;
 
   linspace(-s, s, N_PER_ROW).forEach((x) => {
     linspace(-s, s, N_PER_ROW).forEach((y) => {
@@ -86,8 +88,7 @@ function generateAgents() {
 }
 
 function generateReports(agents) {
-  const AREA_STDEV_METERS = 2000;
-  const N_WALKS = 200;
+  const N_WALKS = 300;
   const RESOLVE_PROB = 0.05;
 
   const contacts = [];
@@ -102,8 +103,8 @@ function generateReports(agents) {
       resolvedMap[resolvedId] = [];
     }
     const walk = randomWalk({
-      x: randomNormal({ dev: AREA_STDEV_METERS }),
-      y: randomNormal({ dev: AREA_STDEV_METERS })
+      x: randomNormal({ dev: SCALE_METERS }),
+      y: randomNormal({ dev: SCALE_METERS })
     });
 
     let nHits = 0;

@@ -2,7 +2,8 @@
   "name": "corona-sniffer-demo-backend",
   "dependencies": {
     "koa": "^2.11.0",
-    "koa-body": "^4.1.1",
+    "koa-router": "^8.0.8",
+    "koa-static": "^5.0.0",
     "sqlite3": "^4.2.0"
   },
   "devDependencies": {
@@ -14,6 +15,6 @@
   },
   "scripts": {
     "server": "node server.js",
-    "lint": "./node_modules/.bin/eslint *.js"
+    "lint": "./node_modules/.bin/eslint *.js ../frontend/*.js"
   }
 }
