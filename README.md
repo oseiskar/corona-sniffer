@@ -23,6 +23,14 @@ A simple BLE sniffer implementation for Linux.
  - [ ] parse rolling identifiers from the Apple/Google protocol
  - [ ] implement daily identifier -> rolling identifiers resolving
 
+## Android app
+
+Minimalistic app for sending BLE beacon messages from an Android phone.
+
+**TODO**
+
+ - [ ] Spoof Apple/Google protocol
+
 ## Backend server
 
 A minimalistic server that can receive data from a fleet of sniffers, store it in a database, and visualize the results.
