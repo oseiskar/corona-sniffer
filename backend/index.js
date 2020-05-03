@@ -13,7 +13,7 @@ const router = new KoaRouter();
 
 function parseRollingId(scan) {
   // TODO: dummy iBeacon version
-  return scan && scan.ibeacon && scan.ibeacon.uuid;
+  return scan && scan.contact_tracing && scan.contact_tracing.rolling_id;
 }
 
 function jsonArrayStream(ctx) {
@@ -43,13 +43,15 @@ router
     const rollingId = parseRollingId(scan);
 
     if (rollingId) {
-      // no await: fire & forget
-      db.insert({
+      const row = {
         rollingId,
         contactJson: scan,
         agentId: agent.id,
         agentJson: agent
-      });
+      };
+      console.log(`inserting ${JSON.stringify(row)}`);
+      // no await: fire & forget
+      db.insert(row);
     } else {
       console.log('skipping report with no ID');
     }

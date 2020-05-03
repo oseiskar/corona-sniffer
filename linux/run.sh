@@ -4,5 +4,5 @@ FILTER=ibeacon
 : "${SERVER:=http://localhost:3000/report}"
 ./ble_scan.py | ./agent.py \
   --config=agent.json \
-  --filter=ibeacon \
+  --filter=contact_tracing \
   --server=$SERVER # --debug

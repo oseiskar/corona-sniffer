@@ -20,16 +20,12 @@ A simple BLE sniffer implementation for Linux.
 
 **TODO**
 
- - [ ] parse rolling identifiers from the Apple/Google protocol
- - [ ] implement daily identifier -> rolling identifiers resolving
+ - [ ] the parsing Python scripts can crash on invalid payloads
 
 ## Android app
 
-Minimalistic app for sending BLE beacon messages from an Android phone.
-
-**TODO**
-
- - [ ] Spoof Apple/Google protocol
+Minimalistic app for sending various BLE beacon messages from an Android phone,
+including spoofed Contact-Tracing payloads.
 
 ## Backend server
 

@@ -35,6 +35,35 @@ def parse_ibeacon(ads):
     if l >= 21: b['txpower'] = struct.unpack('b', payload[20])[0]
     return b
 
+def parse_eddystone_like(ads, service_uuid16bit = '\xaa\xfe'):
+    if len(ads) != 2 or ads[0].type != '\x03' or ads[1].type != '\x16': return None
+    if ads[0].data != service_uuid16bit: return None
+    if ads[1].data[:2] != service_uuid16bit: return None
+    return ads[1].data[2:]
+
+def parse_eddystone(ads):
+    typed_payload = parse_eddystone_like(ads)
+    if typed_payload is None: return None
+    payload = typed_payload[1:]
+    b = {
+        'type': binascii.hexlify(typed_payload[0])
+    }
+    if typed_payload[0] == '\x00': # only support UID type
+        b['txpower'] = struct.unpack('b', payload[1])[0]
+        b['nid'] = binascii.hexlify(payload[1:11])
+        b['bid'] = binascii.hexlify(payload[11:17])
+    else:
+        b['payload'] = binascii.hexlify(payload)
+    return b
+
+def parse_contact_tracing(ads):
+    payload = parse_eddystone_like(ads, '\x6f\xfd')
+    if payload is None: return None
+    return {
+        'rolling_id': binascii.hexlify(payload[:16]),
+        'aem': binascii.hexlify(payload[16:20])
+    }
+
 def parse_ad_structures(msg):
     class ADStruct: pass
     i = 0
@@ -97,6 +126,8 @@ def parse_ble_adv_msg(msg):
     packet.ads = parse_ad_structures(packet.raw_event)
     packet.rssi = struct.unpack('b', le_adv_params[11+response_length])[0]
     packet.ibeacon = parse_ibeacon(packet.ads)
+    packet.eddystone = parse_eddystone(packet.ads)
+    packet.contact_tracing = parse_contact_tracing(packet.ads)
 
     return packet
 
@@ -165,16 +196,19 @@ def message_as_json(msg, raw=False, text=False):
             'type': h(a.type),
             'data': enc(a.data)
         } for a in msg.ads ],
-        'ibeacon': msg.ibeacon
+        'ibeacon': msg.ibeacon,
+        'eddystone': msg.eddystone,
+        'contact_tracing': msg.contact_tracing
     }
     if raw:
         obj['raw_hci'] = h(msg.raw_hci),
         obj['raw_event'] = h(msg.raw_event)
     else:
-        if obj['ibeacon'] is not None:
-            del obj['data']
-    if obj['ibeacon'] is None:
-        del obj['ibeacon']
+        for key in ['ibeacon', 'eddystone', 'contact_tracing']:
+            if obj[key] is not None:
+                del obj['data']
+    for k, v in list(obj.items()):
+        if v is None: del obj[k]
     return obj
 
 if __name__ == '__main__':
