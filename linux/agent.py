@@ -10,7 +10,7 @@ def jsonlReader(infile, text_filter=''):
         if text_filter not in line: continue
         yield(json.loads(line.strip()))
 
-def send(message, server, debug=False):
+def post(message, server, debug=False):
     payload = json.dumps(message)
     if debug:
         print(payload)
@@ -45,4 +45,4 @@ if __name__ == '__main__':
             'scan': scan,
             'agent': agent_config
         }
-        send(msg, args.server, args.debug)
+        post(msg, args.server, args.debug)

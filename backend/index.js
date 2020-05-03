@@ -3,6 +3,7 @@ const Koa = require('koa');
 const KoaRouter = require('koa-router');
 const bodyParser = require('koa-bodyparser');
 const db = require('./db');
+const cryptography = require('./cryptography');
 
 const app = new Koa();
 app.use(require('koa-static')('../frontend'));
@@ -59,9 +60,21 @@ router
     ctx.body = 'OK';
   })
   .post('/resolve', async (ctx) => {
-    const { resolvedId, rollingIds } = JSON.parse(ctx.request.body);
-    await db.updateResolved({ resolvedId, rollingIds });
-    ctx.body = 'OK';
+    const { resolvedId, minUnixTime, maxUnixTime } = ctx.request.body;
+    const MAX_TIME_RANGE_DAYS = 30;
+    const MAX_SECS = MAX_TIME_RANGE_DAYS * 24 * 60 * 60;
+    if ((maxUnixTime - minUnixTime) > MAX_SECS) {
+      ctx.throw(400, 'Max time range exceeded');
+    } else {
+      const rollingIds = cryptography.exposureKeyToRollingIdentifiers(
+        Buffer.from(resolvedId, 'hex'),
+        minUnixTime,
+        maxUnixTime
+      ).map((buf) => buf.toString('hex'));
+      console.log(`Resolving ${resolvedId} to ${rollingIds.length} rolling ID(s)`);
+      await db.updateResolved({ resolvedId, rollingIds });
+      ctx.body = 'OK';
+    }
   })
   .get('/all', (ctx) => {
     const s = jsonArrayStream(ctx);

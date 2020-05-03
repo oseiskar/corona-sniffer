@@ -55,4 +55,8 @@ function keyFromString(string) {
   return data;
 }
 
-module.exports = { exposureKeyToRollingIdentifiers, keyFromString, aes128 };
+module.exports = {
+  exposureKeyToRollingIdentifiers,
+  keyFromString,
+  aes128
+};

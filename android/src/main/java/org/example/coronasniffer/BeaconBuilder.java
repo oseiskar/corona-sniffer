@@ -67,7 +67,7 @@ class BeaconBuilder {
         }
 
         private static byte[] rollingProximityID(byte[] exposureKey, long unixTime) {
-            final int enInterval = (int)(unixTime / 10);
+            final int enInterval = (int)(unixTime / (60 * 10));
             byte[] data = paddedData(enInterval);
             byte[] proxId = aes128(exposureKey, data);
 
