@@ -3,6 +3,6 @@
 FILTER=ibeacon
 : "${SERVER:=http://localhost:3000/report}"
 ./ble_scan.py | ./agent.py \
-  --config=client.json \
+  --config=agent.json \
   --filter=ibeacon \
-  --server=$SERVER
+  --server=$SERVER # --debug

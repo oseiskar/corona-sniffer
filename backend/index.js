@@ -1,15 +1,19 @@
 const stream = require('stream');
 const Koa = require('koa');
 const KoaRouter = require('koa-router');
+const bodyParser = require('koa-bodyparser');
 const db = require('./db');
 
 const app = new Koa();
 app.use(require('koa-static')('../frontend'));
 
+app.use(bodyParser());
+
 const router = new KoaRouter();
 
 function parseRollingId(scan) {
-  return scan.id;
+  // TODO: dummy iBeacon version
+  return scan && scan.ibeacon && scan.ibeacon.uuid;
 }
 
 function jsonArrayStream(ctx) {
@@ -35,15 +39,21 @@ function jsonArrayStream(ctx) {
 
 router
   .post('/report', (ctx) => {
-    const { client, scan } = JSON.parse(ctx.request.body);
+    const { agent, scan } = ctx.request.body;
     const rollingId = parseRollingId(scan);
-    // no await: fire & forget
-    db.insert({
-      rollingId,
-      contactJson: scan,
-      agentId: client.id,
-      agentJson: client
-    });
+
+    if (rollingId) {
+      // no await: fire & forget
+      db.insert({
+        rollingId,
+        contactJson: scan,
+        agentId: agent.id,
+        agentJson: agent
+      });
+    } else {
+      console.log('skipping report with no ID');
+    }
+
     ctx.body = 'OK';
   })
   .post('/resolve', async (ctx) => {

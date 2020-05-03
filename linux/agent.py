@@ -32,17 +32,17 @@ if __name__ == '__main__':
     p.add_argument('--config', help='client config JSON file')
     p.add_argument('--server', help='server URL')
     p.add_argument('--debug', action='store_true',
-        help='Debug mode: crash on HTTP errors')
+        help='Debug mode: crash on HTTP errors, output extra logs')
     p.add_argument('--filter', default='',
         help='Only accept JSON lines that contain this string (anywhere)')
     args = p.parse_args()
 
     with open(args.config) as f:
-        client_config = json.load(f)
+        agent_config = json.load(f)
 
     for scan in jsonlReader(sys.stdin, text_filter=args.filter):
         msg = {
             'scan': scan,
-            'client': client_config
+            'agent': agent_config
         }
         send(msg, args.server, args.debug)
