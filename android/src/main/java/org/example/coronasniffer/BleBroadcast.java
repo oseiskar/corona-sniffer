@@ -37,7 +37,10 @@ class BleBroadcast {
         }
 
         // iBeacon payload for testing: can be easily read by 3rd party apps
-        final AdvertiseData data = BeaconBuilder.randomIBeacon();
+        final AdvertiseData data =
+                //BeaconBuilder.IBeacon.random();
+                //BeaconBuilder.Eddystone.exampleUID();
+                BeaconBuilder.ContactTracing.example();
 
         final AdvertiseSettings settings = new AdvertiseSettings.Builder()
                 .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER)
