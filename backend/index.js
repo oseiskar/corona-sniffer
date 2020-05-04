@@ -12,6 +12,12 @@ app.use(bodyParser());
 
 const router = new KoaRouter();
 
+const LOG = {
+  DEBUG: process.env.VERBOSE ? console.log : () => {},
+  INFO: console.log,
+  WARN: console.warn
+};
+
 function parseRollingId(scan) {
   // TODO: dummy iBeacon version
   return scan && scan.contact_tracing && scan.contact_tracing.rolling_id;
@@ -50,11 +56,11 @@ router
         agentId: agent.id,
         agentJson: agent
       };
-      console.log(`inserting ${JSON.stringify(row)}`);
+      LOG.DEBUG(`inserting ${JSON.stringify(row)}`);
       // no await: fire & forget
       db.insert(row);
     } else {
-      console.log('skipping report with no ID');
+      LOG.WARN('skipping report with no ID');
     }
 
     ctx.body = 'OK';
@@ -71,7 +77,8 @@ router
         minUnixTime,
         maxUnixTime
       ).map((buf) => buf.toString('hex'));
-      console.log(`Resolving ${resolvedId} to ${rollingIds.length} rolling ID(s)`);
+      LOG.INFO(`Resolving ${resolvedId} to ${rollingIds.length} rolling ID(s)`);
+      rollingIds.forEach((id) => LOG.DEBUG(id));
       await db.updateResolved({ resolvedId, rollingIds });
       ctx.body = 'OK';
     }
@@ -90,4 +97,4 @@ app.use(router.allowedMethods());
 
 const PORT = process.env.PORT || 3000;
 const BIND_IP = process.env.BIND_IP || '127.0.0.1';
-app.listen(PORT, BIND_IP, () => console.log(`started on port ${PORT}, bind ${BIND_IP}`));
+app.listen(PORT, BIND_IP, () => LOG.INFO(`started on port ${PORT}, bind ${BIND_IP}`));

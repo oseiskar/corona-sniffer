@@ -26,7 +26,6 @@ class BeaconBuilder {
 
     public static class ContactTracing {
         private static int KEY_LENGTH_BYTES = 16;
-        private static ParcelUuid SERVICE_UUID = parcelUUIDFrom16BitUUID(0xFD6F);
 
         public static AdvertiseData example() {
             // note: the key should be regenerated every 10 minutes
@@ -35,7 +34,7 @@ class BeaconBuilder {
                     System.currentTimeMillis() / 1000);
         }
 
-        private static byte[] keyFromString(String str) {
+        static byte[] keyFromString(String str) {
             byte[] key = new byte[KEY_LENGTH_BYTES];
             byte[] strBytes = str.getBytes();
             if (strBytes.length > key.length)
@@ -44,7 +43,7 @@ class BeaconBuilder {
             return key;
         }
 
-        private static byte[] paddedData(int enInterval) {
+        static byte[] paddedData(int enInterval) {
             ByteBuffer padded = ByteBuffer.allocate(KEY_LENGTH_BYTES);
             padded.put("EN-RPI".getBytes());
             for (int i=6; i<=11; ++i) padded.put((byte)0);
@@ -53,7 +52,7 @@ class BeaconBuilder {
             return padded.array();
         }
 
-        private static byte[] aes128(byte[] key, byte[] data) {
+        static byte[] aes128(byte[] key, byte[] data) {
             try {
                 final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
                 byte[] zeroIV = new byte[KEY_LENGTH_BYTES];
@@ -66,19 +65,15 @@ class BeaconBuilder {
             }
         }
 
-        private static byte[] rollingProximityID(byte[] exposureKey, long unixTime) {
+        static byte[] rollingProximityID(byte[] exposureKey, long unixTime) {
             final int enInterval = (int)(unixTime / (60 * 10));
             byte[] data = paddedData(enInterval);
             byte[] proxId = aes128(exposureKey, data);
 
-            Log.i(TAG, "Contact tracing exposureKey " + bytesToHex(exposureKey)
-                    + ", unixTime " + unixTime + " -> enInterval " + enInterval
-                    + ", rolling ID " + bytesToHex(proxId));
-
             return proxId;
         }
 
-        private static byte[] buildPayload(byte[] proxID, byte[] aem) {
+        static byte[] buildPayload(byte[] proxID, byte[] aem) {
             byte[] payload = new byte[20];
             System.arraycopy(proxID, 0, payload, 0, KEY_LENGTH_BYTES);
             System.arraycopy(aem, 0, payload, KEY_LENGTH_BYTES, 4);
@@ -88,12 +83,16 @@ class BeaconBuilder {
         public static AdvertiseData build(byte[] exposureKey, long unixTime) {
             byte[] proxID = rollingProximityID(exposureKey, unixTime);
 
+            Log.i(TAG, "Contact tracing exposureKey " + bytesToHex(exposureKey)
+                    + ", unixTime " + unixTime + " -> rolling ID " + bytesToHex(proxID));
+
             // TODO: zero AEM for now
             byte[] aem = new byte[4];
             byte[] payload = buildPayload(proxID, aem);
 
             Log.d(TAG, "Contact tracing payload " + bytesToHex(payload));
 
+            final ParcelUuid SERVICE_UUID = parcelUUIDFrom16BitUUID(0xFD6F);
             return new AdvertiseData.Builder()
                     .addServiceData(SERVICE_UUID, payload)
                     .addServiceUuid(SERVICE_UUID)
@@ -110,8 +109,6 @@ class BeaconBuilder {
      * are the advertisement flags (0x06 vs 0x1A) and the 16-bit service UUID (0xAA,0xFE vs 0xFD6F)
      */
     public static class Eddystone {
-        private static ParcelUuid SERVICE_UUID = parcelUUIDFrom16BitUUID(0xFEAA);
-
         public static AdvertiseData exampleUID() {
             long nid = 333;
             int bid = 444;
@@ -136,6 +133,7 @@ class BeaconBuilder {
         }
 
         public static AdvertiseData buildUID(byte[] nidAndBid, byte txPower) {
+            final ParcelUuid SERVICE_UUID = parcelUUIDFrom16BitUUID(0xFEAA);
             return new AdvertiseData.Builder()
                     .addServiceData(SERVICE_UUID, buildUIDPayload(nidAndBid, txPower))
                     .addServiceUuid(SERVICE_UUID)
@@ -176,5 +174,4 @@ class BeaconBuilder {
                     .build();
         }
     }
-
 }
