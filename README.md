@@ -8,7 +8,7 @@ This repository contains a Proof-of-Concept implementation of a BLE-sniffing sys
 
 ## Simulation
 
-The image shows the results of a simulation where 400 BLE-sniffing devices would have been deployed in a 20*20 grid over an area of 1500*1500 m². The movement of 300 people around the area have been (crudely) simulated as random walks.
+The image shows the results of a simulation where 400 BLE-sniffing devices would have been deployed in a 20×20 grid over an area of 1500×1500 m². The movement of 300 people around the area have been (crudely) simulated as random walks.
 
 ![simulated-data](.github/images/ble-sniffer-grid-simulation.png)
 
