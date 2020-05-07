@@ -1,5 +1,7 @@
 const assert = require('assert');
 const crypto = require('crypto');
+const hkdf = require('futoin-hkdf');
+
 /*
  * Implements Apple & Google:
  *
@@ -41,13 +43,20 @@ function aes128(key, data) {
   return ciphertext;
 }
 
-function exposureKeyToRollingProximityIDs(exposureKey, unixTimeBegin, unixTimeEnd) {
-  // TODO: add TEK -> RPIK mapping here
+function exposureKeyToRPIK(exposureKey) {
   assert(exposureKey.length === KEY_LENGTH_BYTES);
+  return hkdf(exposureKey, KEY_LENGTH_BYTES, {
+    info: Buffer.from('EN-RPIK'),
+    hash: 'SHA-256'
+  });
+}
+
+function exposureKeyToRollingProximityIDs(exposureKey, unixTimeBegin, unixTimeEnd) {
+  const rpik = exposureKeyToRPIK(exposureKey);
   const jBegin = ENIntervalNumber(unixTimeBegin);
   const jEnd = ENIntervalNumber(unixTimeEnd);
   const jRange = closedRange(jBegin, jEnd);
-  return jRange.map((j) => aes128(exposureKey, generatePaddedData(j)));
+  return jRange.map((j) => aes128(rpik, generatePaddedData(j)));
 }
 
 function keyFromString(string) {
@@ -58,6 +67,7 @@ function keyFromString(string) {
 
 module.exports = {
   exposureKeyToRollingProximityIDs,
+  exposureKeyToRPIK,
   keyFromString,
   aes128
 };

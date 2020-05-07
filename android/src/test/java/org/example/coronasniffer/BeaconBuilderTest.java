@@ -18,13 +18,13 @@ public class BeaconBuilderTest {
 
     @Test
     public void testAppleGoogleENRollingProximityIDs() {
-        // Rolling Proximity Identifier Key
-        byte[] rpik = BeaconBuilder.AppleGoogleEN.keyFromString("foo");
+        // Temporary Exposure Key
+        byte[] tek = BeaconBuilder.AppleGoogleEN.keyFromString("foo");
         int time1 = 0;
         int time2 = 60 * 10 + 1;
-        byte[] proxID1 = BeaconBuilder.AppleGoogleEN.rollingProximityID(rpik, time1);
-        byte[] proxID2 = BeaconBuilder.AppleGoogleEN.rollingProximityID(rpik, time2);
-        assertEquals("7ebc4679238b6dc389bf322e6c8712a7", bytesToHex(proxID1));
-        assertEquals("b50f064dfa20c6e31b0bdd1f92cf755d", bytesToHex(proxID2));
+        byte[] proxID1 = BeaconBuilder.AppleGoogleEN.rollingProximityID(tek, time1);
+        byte[] proxID2 = BeaconBuilder.AppleGoogleEN.rollingProximityID(tek, time2);
+        assertEquals("ebaca2b735c90d01c361e8ca6ec167f2", bytesToHex(proxID1));
+        assertEquals("a9141c2b822e1dc3fbe916c4ba64c368", bytesToHex(proxID2));
     }
 }

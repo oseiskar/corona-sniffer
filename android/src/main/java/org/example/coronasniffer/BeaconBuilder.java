@@ -8,8 +8,11 @@ import java.nio.ByteOrder;
 import java.util.UUID;
 
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import at.favre.lib.crypto.HKDF;
 
 class BeaconBuilder {
     private final static String TAG = BeaconBuilder.class.getSimpleName();
@@ -69,7 +72,8 @@ class BeaconBuilder {
         }
 
         /** Rolling Proximity ID (RPI), based on RPIK and time */
-        static byte[] rollingProximityID(byte[] rpik, long unixTime) {
+        static byte[] rollingProximityID(byte[] temporaryExposureKey, long unixTime) {
+            byte[] rpik = rollingProximityIdentifierKeyFromTEK(temporaryExposureKey);
             final int enInterval = (int)(unixTime / (60 * 10));
             byte[] data = paddedData(enInterval);
             byte[] proxId = aes128(rpik, data);
@@ -84,15 +88,21 @@ class BeaconBuilder {
             return payload;
         }
 
-        public static AdvertiseData build(byte[] rpik, long unixTime) {
-            byte[] proxID = rollingProximityID(rpik, unixTime);
+        static byte[] rollingProximityIdentifierKeyFromTEK(byte[] tek) {
+            final SecretKey salt = null;
+            byte[] prk = HKDF.fromHmacSha256().extract(salt, tek);
+            return HKDF.fromHmacSha256().expand(prk, "EN-RPIK".getBytes(), KEY_LENGTH_BYTES);
+        }
 
-            Log.i(TAG, "Contact tracing exposureKey " + bytesToHex(rpik)
-                    + ", unixTime " + unixTime + " -> rolling ID " + bytesToHex(proxID));
+        public static AdvertiseData build(byte[] temporaryExposureKey, long unixTime) {
+            byte[] rpi = rollingProximityID(temporaryExposureKey, unixTime);
+
+            Log.i(TAG, "Contact tracing exposureKey " + bytesToHex(temporaryExposureKey)
+                    + ", unixTime " + unixTime + " -> RPI " + bytesToHex(rpi));
 
             // TODO: zero AEM for now
             byte[] aem = new byte[4];
-            byte[] payload = buildPayload(proxID, aem);
+            byte[] payload = buildPayload(rpi, aem);
 
             Log.d(TAG, "Contact tracing payload " + bytesToHex(payload));
 
