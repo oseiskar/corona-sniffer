@@ -72,7 +72,7 @@ router
     if ((maxUnixTime - minUnixTime) > MAX_SECS) {
       ctx.throw(400, 'Max time range exceeded');
     } else {
-      const rollingIds = cryptography.exposureKeyToRollingIdentifiers(
+      const rollingIds = cryptography.exposureKeyToRollingProximityIDs(
         Buffer.from(resolvedId, 'hex'),
         minUnixTime,
         maxUnixTime

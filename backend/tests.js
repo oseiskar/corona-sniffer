@@ -10,11 +10,11 @@ const cryptography = require('./cryptography');
   assert(ciphertext.equals(expected));
 }());
 
-(function testRollingIdentifiers() {
+(function testRollingProximityIDs() {
   const exposureKey = cryptography.keyFromString('foo');
   const timeBegin = 0;
   const timeEnd = 60 * 10 + 1;
-  const result = cryptography.exposureKeyToRollingIdentifiers(exposureKey, timeBegin, timeEnd);
+  const result = cryptography.exposureKeyToRollingProximityIDs(exposureKey, timeBegin, timeEnd);
   assert(result.length === 2);
   const padded0 = Buffer.from('454e2d52504900000000000000000000', 'hex');
   const padded1 = Buffer.from('454e2d52504900000000000001000000', 'hex');

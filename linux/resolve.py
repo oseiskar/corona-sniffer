@@ -1,6 +1,7 @@
 #!/usr/bin/python
 """
-A helper script to post resolved exposure keys to the server
+A helper script to post diagnosis keys (exposure keys corresponding to
+confirmed positive cases) to the server
 """
 import argparse, time
 from agent import post

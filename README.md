@@ -24,7 +24,7 @@ A BLE-sniffing system consists of
 
  2. A device running an official local contact tracing app on a device which is hacked to intercept the confirmed positive _diagnosis keys_ the app downloads from the local health authorities' servers (see [Google's spec][O1] for the terminology). This part is not described in this repository, but it is an easy task and infeasible to prevent effectively.
 
- 3. The server(s) receive the BLE contact tracing data, namely the _rotating proximity identifiers_ from the agents and the _diagnosis keys_ from the hacked app.
+ 3. The server(s) receive the BLE contact tracing data, namely the _rolling proximity identifiers_ (RPIs) from the agents and the _diagnosis keys_ from the hacked app.
 
 [O1]: https://www.blog.google/documents/68/Android_Exposure_Notification_API_documentation_v1.2.pdf
 
@@ -58,7 +58,7 @@ No official implementations have been released at the time of writing, so it's d
 A minimalistic server that can receive data from a fleet of sniffers, store it in a database, and visualize the results. HTTPS and authentication are currently not supported, but could be added using a reverse proxy. A single SQLite database cannot cope with a very high volume of data, but could be rather easily sharded.
 
 #### Installation
-
+exposure
  1. Setup NodeJS
  2. `cd backend`
  3. `npm install`
@@ -81,9 +81,10 @@ which can be directly examined/debugged with, e.g., the `sqlitebrowser` program.
  1. Start the server :`node index.js` (see the file for `BIND` and `PORT` options).
  2. Start the Linux agent(s): `cd linux; sudo ./run.sh`
     change `SERVER` in `run.sh` and the spec in `agent.json` as necessary.
- 3. Run the Android test app to spoof Contact Tracing messages with a known exposure key
+ 3. Run the Android test app to spoof Contact Tracing messages with a
+    known _temporary exposure key_ (TEK)
  4. Open http://localhost:3000 (should show a blue circle)
- 5. Mark the exposure key as "infected / resolved", e.g.,
+ 5. Mark the exposure key as infected, i.e., as a _diagnosis key_
 
         cd linux; resolve.py 6578616d706c65000000000000000000
 

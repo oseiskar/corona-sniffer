@@ -24,7 +24,10 @@ class BeaconBuilder {
         return sb.toString();
     }
 
-    public static class ContactTracing {
+    /**
+     * Apple|Google Exposure Notification protocol (v1.2)
+     */
+    public static class AppleGoogleEN {
         private static int KEY_LENGTH_BYTES = 16;
 
         public static AdvertiseData example() {
@@ -65,10 +68,11 @@ class BeaconBuilder {
             }
         }
 
-        static byte[] rollingProximityID(byte[] exposureKey, long unixTime) {
+        /** Rolling Proximity ID (RPI), based on RPIK and time */
+        static byte[] rollingProximityID(byte[] rpik, long unixTime) {
             final int enInterval = (int)(unixTime / (60 * 10));
             byte[] data = paddedData(enInterval);
-            byte[] proxId = aes128(exposureKey, data);
+            byte[] proxId = aes128(rpik, data);
 
             return proxId;
         }
@@ -80,10 +84,10 @@ class BeaconBuilder {
             return payload;
         }
 
-        public static AdvertiseData build(byte[] exposureKey, long unixTime) {
-            byte[] proxID = rollingProximityID(exposureKey, unixTime);
+        public static AdvertiseData build(byte[] rpik, long unixTime) {
+            byte[] proxID = rollingProximityID(rpik, unixTime);
 
-            Log.i(TAG, "Contact tracing exposureKey " + bytesToHex(exposureKey)
+            Log.i(TAG, "Contact tracing exposureKey " + bytesToHex(rpik)
                     + ", unixTime " + unixTime + " -> rolling ID " + bytesToHex(proxID));
 
             // TODO: zero AEM for now

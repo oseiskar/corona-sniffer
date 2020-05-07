@@ -40,7 +40,7 @@ class BleBroadcast {
         final AdvertiseData data =
                 //BeaconBuilder.IBeacon.random();
                 //BeaconBuilder.Eddystone.exampleUID();
-                BeaconBuilder.ContactTracing.example();
+                BeaconBuilder.AppleGoogleEN.example();
 
         final AdvertiseSettings settings = new AdvertiseSettings.Builder()
                 .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER)

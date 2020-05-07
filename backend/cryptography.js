@@ -41,7 +41,8 @@ function aes128(key, data) {
   return ciphertext;
 }
 
-function exposureKeyToRollingIdentifiers(exposureKey, unixTimeBegin, unixTimeEnd) {
+function exposureKeyToRollingProximityIDs(exposureKey, unixTimeBegin, unixTimeEnd) {
+  // TODO: add TEK -> RPIK mapping here
   assert(exposureKey.length === KEY_LENGTH_BYTES);
   const jBegin = ENIntervalNumber(unixTimeBegin);
   const jEnd = ENIntervalNumber(unixTimeEnd);
@@ -56,7 +57,7 @@ function keyFromString(string) {
 }
 
 module.exports = {
-  exposureKeyToRollingIdentifiers,
+  exposureKeyToRollingProximityIDs,
   keyFromString,
   aes128
 };
