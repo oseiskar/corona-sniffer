@@ -18,8 +18,10 @@
     "random-normal": "^1.0.0"
   },
   "scripts": {
-    "start": "node server.js",
+    "start": "node index.js",
     "test": "node tests.js",
-    "lint": "./node_modules/.bin/eslint *.js ../frontend/*.js"
+    "lint": "./node_modules/.bin/eslint *.js ../frontend/*.js",
+    "db:clear": "rm data/database.db*",
+    "db:simulate": "node generate_fake_data.js"
   }
 }

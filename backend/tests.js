@@ -10,12 +10,12 @@ const cryptography = require('./cryptography');
   assert(ciphertext.equals(expected));
 }());
 
-(function testRollingProximityIDs() {
+(function testAppleGoogleRollingProximityIDs() {
   const exposureKey = cryptography.keyFromString('foo');
-  const rpik = cryptography.exposureKeyToRPIK(exposureKey);
+  const rpik = cryptography.appleGoogle.exposureKeyToRPIK(exposureKey);
   const timeBegin = 0;
   const timeEnd = 60 * 10 + 1;
-  const result = cryptography.exposureKeyToRollingProximityIDs(exposureKey, timeBegin, timeEnd);
+  const result = cryptography.appleGoogle.diagnosisKeyToRPIs(exposureKey, timeBegin, timeEnd);
   assert(result.length === 2);
   const padded0 = Buffer.from('454e2d52504900000000000000000000', 'hex');
   const padded1 = Buffer.from('454e2d52504900000000000001000000', 'hex');
@@ -25,4 +25,12 @@ const cryptography = require('./cryptography');
   console.log(proxID1.toString('hex'));
   assert(result[0].equals(proxID0));
   assert(result[1].equals(proxID1));
+}());
+
+
+(function testDP3TEphIDs() {
+  const secretKey = cryptography.keyFromString('example');
+  const ephIds = cryptography.dp3t.secretKeyToEphIds(secretKey);
+  assert(ephIds.length === 24 * 4);
+  assert(ephIds[1].equals(Buffer.from('ce0a533565e9179847ef88fe20f7b5ca', 'hex')));
 }());

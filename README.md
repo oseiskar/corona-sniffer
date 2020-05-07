@@ -69,9 +69,9 @@ which can be directly examined/debugged with, e.g., the `sqlitebrowser` program.
 
 #### Run simulation
 
- 1. To populate the database with simulated data, run `node generate_fake_data.js`.
+ 1. To populate the database with simulated data, run `npm run db:simulate`.
     This will erase any previous contents of the database.
- 2. Run `node index.js`
+ 2. Run `npm run start`
  3. Go to http://localhost:3000 to observe the results.
     They will be shown on top of Open Street Map (using Leaflet)
 
@@ -86,7 +86,7 @@ which can be directly examined/debugged with, e.g., the `sqlitebrowser` program.
  4. Open http://localhost:3000 (should show a blue circle)
  5. Mark the exposure key as infected, i.e., as a _diagnosis key_
 
-        cd linux; resolve.py 6578616d706c65000000000000000000
+        cd linux; ./resolve.py apple_google_en 6578616d706c65000000000000000000
 
  6. Refresh the browser, the circle should have turned red
 

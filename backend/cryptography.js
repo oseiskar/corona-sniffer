@@ -23,8 +23,11 @@ function generatePaddedData(j) {
   return data;
 }
 
-function closedRange(begin, end) {
+function closedRange(begin, end, { maxLength = 10000 } = {}) {
   const r = [];
+  if (end - begin > maxLength) {
+    throw new Error('max number of generated items exceeded');
+  }
   for (let j = begin; j <= end; ++j) {
     r.push(j);
   }
@@ -51,12 +54,28 @@ function exposureKeyToRPIK(exposureKey) {
   });
 }
 
-function exposureKeyToRollingProximityIDs(exposureKey, unixTimeBegin, unixTimeEnd) {
+function diagnosisKeyToRPIs(exposureKey, unixTimeBegin, unixTimeEnd) {
   const rpik = exposureKeyToRPIK(exposureKey);
   const jBegin = ENIntervalNumber(unixTimeBegin);
   const jEnd = ENIntervalNumber(unixTimeEnd);
   const jRange = closedRange(jBegin, jEnd);
   return jRange.map((j) => aes128(rpik, generatePaddedData(j)));
+}
+
+function secretKeyToEphIds(secretKey) {
+  assert(secretKey.length === KEY_LENGTH_BYTES);
+  const EPOCHS_PER_DAY = 24 * 4;
+  const prf = crypto.createHmac('sha256', secretKey).update('broadcast key').digest();
+  const cipher = crypto
+    .createCipheriv('aes-256-ctr', prf, ZERO_AES_IV)
+    .setAutoPadding(false);
+  const ephIds = [];
+  const zeros = Buffer.alloc(KEY_LENGTH_BYTES);
+  for (let i = 0; i < EPOCHS_PER_DAY; ++i) {
+    ephIds.push(cipher.update(zeros));
+  }
+  cipher.final();
+  return ephIds;
 }
 
 function keyFromString(string) {
@@ -66,8 +85,13 @@ function keyFromString(string) {
 }
 
 module.exports = {
-  exposureKeyToRollingProximityIDs,
-  exposureKeyToRPIK,
   keyFromString,
-  aes128
+  aes128,
+  appleGoogle: {
+    diagnosisKeyToRPIs,
+    exposureKeyToRPIK
+  },
+  dp3t: {
+    secretKeyToEphIds
+  }
 };

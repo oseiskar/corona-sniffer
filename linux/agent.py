@@ -4,11 +4,12 @@ POST BLE scans to a remote server
 """
 import json, sys, urllib2
 
-def jsonlReader(infile, text_filter=''):
+def jsonlReader(infile, field_filter=''):
     for line in infile:
         if len(line) == 0: break
-        if text_filter not in line: continue
-        yield(json.loads(line.strip()))
+        obj = json.loads(line.strip())
+        if len(field_filter) > 0 and field_filter not in obj: continue
+        yield(obj)
 
 def post(message, server, debug=False):
     payload = json.dumps(message)
@@ -34,13 +35,13 @@ if __name__ == '__main__':
     p.add_argument('--debug', action='store_true',
         help='Debug mode: crash on HTTP errors, output extra logs')
     p.add_argument('--filter', default='',
-        help='Only accept JSON lines that contain this string (anywhere)')
+        help='Only accept JSON objects that contain this field')
     args = p.parse_args()
 
     with open(args.config) as f:
         agent_config = json.load(f)
 
-    for scan in jsonlReader(sys.stdin, text_filter=args.filter):
+    for scan in jsonlReader(sys.stdin, field_filter=args.filter):
         msg = {
             'scan': scan,
             'agent': agent_config

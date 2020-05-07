@@ -56,13 +56,33 @@ def parse_eddystone(ads):
         b['payload'] = binascii.hexlify(payload)
     return b
 
-def parse_contact_tracing(ads):
+def parse_apple_google_en(ads):
     payload = parse_eddystone_like(ads, '\x6f\xfd')
     if payload is None: return None
     return {
-        'rolling_id': binascii.hexlify(payload[:16]),
+        'rpi': binascii.hexlify(payload[:16]),
         'aem': binascii.hexlify(payload[16:20])
     }
+
+def parse_dp3t_eph_id(ads):
+    payload = parse_eddystone_like(ads, '\x68\xfd')
+    if payload is None: return None
+    return binascii.hexlify(payload[:16])
+
+def parse_contact_tracing(ads):
+    apple_google_en = parse_apple_google_en(ads)
+    if apple_google_en is not None:
+        return {
+            'apple_google_en': apple_google_en
+        }
+
+    dp3t_eph_id = parse_dp3t_eph_id(ads)
+    if dp3t_eph_id is not None:
+        return {
+            'dp3t_eph_id': dp3t_eph_id
+        }
+
+    return None
 
 def parse_ad_structures(msg):
     class ADStruct: pass

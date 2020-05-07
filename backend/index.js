@@ -19,8 +19,34 @@ const LOG = {
 };
 
 function parseRollingId(scan) {
-  // TODO: dummy iBeacon version
-  return scan && scan.contact_tracing && scan.contact_tracing.rolling_id;
+  const ct = scan && scan.contact_tracing;
+  if (!ct) return null;
+  // Note: both contact tracing protocols use 128-bit = 16-byte
+  // rolling identifiers, which should not collide with each other
+  // with any reasonable probability
+  if (ct.apple_google_en) return ct.apple_google_en.rpi;
+  return ct.dp3t_eph_id;
+}
+
+function generateRollingIdsAppleGoogleEN(request) {
+  const { diagnosisKey, minUnixTime, maxUnixTime } = request;
+  const rollingIds = cryptography.appleGoogle.diagnosisKeyToRPIs(
+    Buffer.from(diagnosisKey, 'hex'),
+    minUnixTime,
+    maxUnixTime
+  ).map((buf) => buf.toString('hex'));
+
+  return { rollingIds, resolvedId: diagnosisKey };
+}
+
+function generateRollingIdsDP3T(request) {
+  // ignoring start timestamp
+  const { secretKey } = request;
+  const rollingIds = cryptography.dp3t.secretKeyToEphIds(
+    Buffer.from(secretKey, 'hex')
+  ).map((buf) => buf.toString('hex'));
+
+  return { rollingIds, resolvedId: secretKey };
 }
 
 function jsonArrayStream(ctx) {
@@ -44,6 +70,17 @@ function jsonArrayStream(ctx) {
   };
 }
 
+async function resolveRollingIds(ctx, { resolvedId, rollingIds }) {
+  if (!rollingIds || rollingIds.length === 0) {
+    ctx.throw(400, 'No IDs generated');
+  } else {
+    LOG.INFO(`Resolving ${resolvedId} to ${rollingIds.length} rolling ID(s)`);
+    rollingIds.forEach((id) => LOG.DEBUG(id));
+    await db.updateResolved({ resolvedId, rollingIds });
+    ctx.body = 'OK';
+  }
+}
+
 router
   .post('/report', (ctx) => {
     const { agent, scan } = ctx.request.body;
@@ -65,23 +102,11 @@ router
 
     ctx.body = 'OK';
   })
-  .post('/resolve', async (ctx) => {
-    const { resolvedId, minUnixTime, maxUnixTime } = ctx.request.body;
-    const MAX_TIME_RANGE_DAYS = 30;
-    const MAX_SECS = MAX_TIME_RANGE_DAYS * 24 * 60 * 60;
-    if ((maxUnixTime - minUnixTime) > MAX_SECS) {
-      ctx.throw(400, 'Max time range exceeded');
-    } else {
-      const rollingIds = cryptography.exposureKeyToRollingProximityIDs(
-        Buffer.from(resolvedId, 'hex'),
-        minUnixTime,
-        maxUnixTime
-      ).map((buf) => buf.toString('hex'));
-      LOG.INFO(`Resolving ${resolvedId} to ${rollingIds.length} rolling ID(s)`);
-      rollingIds.forEach((id) => LOG.DEBUG(id));
-      await db.updateResolved({ resolvedId, rollingIds });
-      ctx.body = 'OK';
-    }
+  .post('/resolve/apple_google_en', async (ctx) => {
+    await resolveRollingIds(ctx, generateRollingIdsAppleGoogleEN(ctx.request.body));
+  })
+  .post('/resolve/dp3t', async (ctx) => {
+    await resolveRollingIds(ctx, generateRollingIdsDP3T(ctx.request.body));
   })
   .get('/all', (ctx) => {
     const s = jsonArrayStream(ctx);

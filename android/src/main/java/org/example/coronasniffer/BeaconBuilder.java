@@ -8,6 +8,7 @@ import java.nio.ByteOrder;
 import java.util.UUID;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -27,11 +28,21 @@ class BeaconBuilder {
         return sb.toString();
     }
 
+    static byte[] fixedLengthKeyFromString(String str, int length) {
+        byte[] key = new byte[length];
+        byte[] strBytes = str.getBytes();
+        if (strBytes.length > key.length)
+            throw new IllegalArgumentException("'" + str + "' is too long to be used as a key");
+        System.arraycopy(strBytes, 0, key, 0, strBytes.length);
+        return key;
+    }
+
     /**
      * Apple|Google Exposure Notification protocol (v1.2)
      */
     public static class AppleGoogleEN {
-        private static int KEY_LENGTH_BYTES = 16;
+        private static final int SERVICE_UUID_16 = 0xFD6F;
+        private static final int KEY_LENGTH_BYTES = 16;
 
         public static AdvertiseData example() {
             // note: the key should be regenerated every 10 minutes
@@ -41,12 +52,7 @@ class BeaconBuilder {
         }
 
         static byte[] keyFromString(String str) {
-            byte[] key = new byte[KEY_LENGTH_BYTES];
-            byte[] strBytes = str.getBytes();
-            if (strBytes.length > key.length)
-                throw new IllegalArgumentException("'" + str + "' is too long to be used as a key");
-            System.arraycopy(strBytes, 0, key, 0, strBytes.length);
-            return key;
+            return fixedLengthKeyFromString(str, KEY_LENGTH_BYTES);
         }
 
         static byte[] paddedData(int enInterval) {
@@ -106,9 +112,64 @@ class BeaconBuilder {
 
             Log.d(TAG, "Contact tracing payload " + bytesToHex(payload));
 
-            final ParcelUuid SERVICE_UUID = parcelUUIDFrom16BitUUID(0xFD6F);
+            final ParcelUuid SERVICE_UUID = parcelUUIDFrom16BitUUID(SERVICE_UUID_16);
             return new AdvertiseData.Builder()
                     .addServiceData(SERVICE_UUID, payload)
+                    .addServiceUuid(SERVICE_UUID)
+                    .setIncludeTxPowerLevel(false)
+                    .setIncludeDeviceName(false)
+                    .build();
+        }
+    }
+
+    /**
+     * DP-3T protocol beacons, see
+     * https://github.com/DP-3T/dp3t-sdk-android/blob/master-alpha/dp3t-sdk/sdk/src/main/java/org/dpppt/android/sdk/internal/gatt/BleServer.java
+     */
+    public static class DP3T {
+        private static final int SERVICE_UUID_16 = 0xFD68;
+        private static final int KEY_LENGTH_BYTES = 16;
+        private static final int EPOCHS_PER_DAY = 24 * 4;
+
+        public static AdvertiseData example() {
+            // note: should be rotated from time to time
+            return build(keyFromString("example"), 1);
+        }
+
+        static byte[] keyFromString(String str) {
+            return fixedLengthKeyFromString(str, KEY_LENGTH_BYTES);
+        }
+
+        static byte[] generateEphId(byte[] secretKey, int epochIdx) {
+            if (epochIdx < 0 || epochIdx >= EPOCHS_PER_DAY) {
+                throw new IllegalArgumentException("invalid epoch number");
+            }
+            try {
+                Mac mac = Mac.getInstance("HmacSHA256");
+                mac.init(new SecretKeySpec(secretKey, "HmacSHA256"));
+                mac.update("broadcast key".getBytes());
+                byte[] prf = mac.doFinal();
+                SecretKeySpec keySpec = new SecretKeySpec(prf, "AES");
+                Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
+                byte[] zeros = new byte[KEY_LENGTH_BYTES];
+                cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(zeros));
+                byte[] result = zeros;
+                for (int i = 0; i <= epochIdx; i++) result = cipher.update(zeros);
+                return result;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public static AdvertiseData build(byte[] secretKey, int epochIdx) {
+            final ParcelUuid SERVICE_UUID = parcelUUIDFrom16BitUUID(SERVICE_UUID_16);
+
+            byte[] ephId = generateEphId(secretKey, epochIdx);
+            Log.i(TAG, "DP-3T secretKey " + bytesToHex(secretKey)
+                    + ", daily epoch number " + epochIdx + " -> ephId " + bytesToHex(ephId));
+
+            return new AdvertiseData.Builder()
+                    .addServiceData(SERVICE_UUID, ephId)
                     .addServiceUuid(SERVICE_UUID)
                     .setIncludeTxPowerLevel(false)
                     .setIncludeDeviceName(false)
@@ -120,9 +181,10 @@ class BeaconBuilder {
      * For reference: Eddystone UID payload. This is closer to contact the contact tracing
      * payload than iBeacon. The contact tracing message actually looks like a new Eddystone
      * frame type (in addition to the existing UUID, URL and TLM types). Then only differences
-     * are the advertisement flags (0x06 vs 0x1A) and the 16-bit service UUID (0xAA,0xFE vs 0xFD6F)
+     * are the advertisement flags (0x06 vs 0x1A) and the 16-bit service UUID (0xFEAA vs 0xFD6F)
      */
     public static class Eddystone {
+        private static final int SERVICE_UUID_16 = 0xFEAA;
         public static AdvertiseData exampleUID() {
             long nid = 333;
             int bid = 444;
@@ -147,7 +209,7 @@ class BeaconBuilder {
         }
 
         public static AdvertiseData buildUID(byte[] nidAndBid, byte txPower) {
-            final ParcelUuid SERVICE_UUID = parcelUUIDFrom16BitUUID(0xFEAA);
+            final ParcelUuid SERVICE_UUID = parcelUUIDFrom16BitUUID(SERVICE_UUID_16);
             return new AdvertiseData.Builder()
                     .addServiceData(SERVICE_UUID, buildUIDPayload(nidAndBid, txPower))
                     .addServiceUuid(SERVICE_UUID)
