@@ -63,7 +63,6 @@ function diagnosisKeyToRPIs(exposureKey, unixTimeBegin, unixTimeEnd) {
 }
 
 function secretKeyToEphIds(secretKey) {
-  assert(secretKey.length === KEY_LENGTH_BYTES);
   const EPOCHS_PER_DAY = 24 * 4;
   const prf = crypto.createHmac('sha256', secretKey).update('broadcast key').digest();
   const cipher = crypto

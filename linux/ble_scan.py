@@ -36,10 +36,15 @@ def parse_ibeacon(ads):
     return b
 
 def parse_eddystone_like(ads, service_uuid16bit = '\xaa\xfe'):
-    if len(ads) != 2 or ads[0].type != '\x03' or ads[1].type != '\x16': return None
-    if ads[0].data != service_uuid16bit: return None
-    if ads[1].data[:2] != service_uuid16bit: return None
-    return ads[1].data[2:]
+    # a hacky way of tolerating uninteresting ADs before the actual payload
+    ads = [0] + ads[:]
+    while len(ads) >= 2:
+        ads = ads[1:]
+        if ads[0].type != '\x03' or ads[1].type != '\x16': continue
+        if ads[0].data != service_uuid16bit: continue
+        if ads[1].data[:2] != service_uuid16bit: continue
+        return ads[1].data[2:]
+    return None
 
 def parse_eddystone(ads):
     typed_payload = parse_eddystone_like(ads)
