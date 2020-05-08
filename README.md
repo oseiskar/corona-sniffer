@@ -1,6 +1,6 @@
 # BLE contact tracing sniffer PoC
 
-How "anonymous" is the semi-decentralized BLE contact tracing proposed by [Apple & Google](https://www.apple.com/covid19/contacttracing)?
+How "anonymous" is the semi-decentralized BLE contact tracing proposed by [Apple & Google](https://www.apple.com/covid19/contacttracing) or [DP-3T](https://github.com/DP-3T/documents)?
 
 It is as anonymous as the simulated picture below - and this data is technically accessible to **any 3rd party who can install a large fleet of BLE-sniffing devices**. This is because all beacons signals broadcast by infected individuals are published to essentially all users of the system when an individual voluntarily uploads their positive infection status.
 
@@ -22,15 +22,24 @@ A BLE-sniffing system consists of
 
  1. A significant number of BLE-sniffing devices installed to different known physical locations. An example implementation is given for Linux. Mobile phones could also act as BLE sniffers. They passively listen to contact tracing BLE traffic and upload it to the server(s).
 
- 2. A device running an official local contact tracing app on a device which is hacked to intercept the confirmed positive _diagnosis keys_ the app downloads from the local health authorities' servers (see [Google's spec][O1] for the terminology). This part is not described in this repository, but it is an easy task and infeasible to prevent effectively.
+ 2. A device running an official local contact tracing app on a device which is hacked to intercept the confirmed positive _diagnosis keys_ (in [Apple/Google terminology][O1]) / _secret day keys_ (in [DP-3T][O2]) the app downloads from the local health authorities' servers. This part is not described in this repository, but it is an easy task and infeasible to prevent effectively.
 
- 3. The server(s) receive the BLE contact tracing data, namely the _rolling proximity identifiers_ (RPIs) from the agents and the _diagnosis keys_ from the hacked app.
+ 3. The server(s) receive the BLE contact tracing data, namely the _rolling proximity identifiers_ (RPIs, or _EphIds_ in DP-3T) from the agents and the _diagnosis keys_ from the hacked app.
 
 [O1]: https://www.blog.google/documents/68/Android_Exposure_Notification_API_documentation_v1.2.pdf
+[O2]: https://github.com/DP-3T/documents/blob/master/DP3T%20White%20Paper.pdf
 
 ## Linux agent
 
-A simple BLE sniffer implementation for Linux. Listens to BLE messages from the Apple/Google Contact Tracing (a.k.a. Exposure Notification) protocol.
+A simple BLE sniffer implementation for Linux. Listens to BLE messages from the Apple/Google Exposure Notification (their rebranding of "Contact Tracing") and DP-3T protocols. The agent can verifiably observe DP-3T EphId payloads as broadcast by the [official test app][DP3TApp].
+
+No official implementation of the Apple/Google system has been released for testing at the time of writing (only [example UI code][A3] has been released), so I cannot confirm that the agent would interpret these messages correctly. However, note that the only difference between the Apple/Google Exposure Notification [BLE specification][A1] and the Google Eddystone base protocol (cf. the diagram [here][A2]) seem to be the 16-bit service UUID (0xFAAA vs 0xFD6F) and the BLE advertise flags (0x06 vs 0x1A). The agent can observe Eddystone payloads so it will be able to observe the Apple/Google EN protocol too after minimal adjustments.
+
+[A1]: https://www.blog.google/documents/70/Exposure_Notification_-_Bluetooth_Specification_v1.2.2.pdf
+[A2]: https://os.mbed.com/teams/Bluetooth-Low-Energy/code/BLE_EddystoneBeacon_Service/file/dfb7fb5a971b/Eddystone.h/
+[A3]: https://github.com/google/exposure-notifications-android
+[DP3TApp]: https://github.com/DP-3T/dp3t-app-android
+
 
 #### Installation
 
@@ -42,16 +51,11 @@ Tested on Debian Stretch
 
 ## Android app
 
-A minimalistic app for sending various BLE beacon messages from an Android phone, including spoofed Contact Tracing payloads.
+A minimalistic app for sending various BLE beacon messages from an Android phone, including spoofed Apple/Google Exposure Notification and DP-3T EphId payloads. The app is intended for more convenient testing without installing official contract tracing apps or their test versions. 
 
 The app can be installed through Android Studio or running `cd android; ./gradlew installDebug` - assuming you have working Android development environment installed. Make sure you have Bluetooth on in the phone and see Android Logcat for details of what the app is supposed to broadcast.
 
-No official implementations have been released at the time of writing, so it's difficult to confirm if the spoofed messages are compatible with the actual protocol or not (only [example UI code][A4] has been released). However, the only difference between the Exposure Notification [BLE specification][A1] and the Google Eddystone base protocol (cf. the diagram [here][A2]) seem to be the 16-bit service UUID (0xFAAA vs 0xFD6F) and the BLE advertise flags (0x06 vs 0x1A). Based on this observation and comparison to Google's Eddystone broadcast [example code][A3], the messages broadcast by this app are "close enough" to confirm that the _Linux agent_ will be able to observe the real Contact Tracing beacons as well, which is the main point of the Android test app.
-
-[A1]: https://www.blog.google/documents/70/Exposure_Notification_-_Bluetooth_Specification_v1.2.2.pdf
-[A2]: https://os.mbed.com/teams/Bluetooth-Low-Energy/code/BLE_EddystoneBeacon_Service/file/dfb7fb5a971b/Eddystone.h/
-[A3]: https://github.com/google/eddystone/blob/txeddystone/tools/txeddystone/TxEddystone/app/src/main/java/com/google/sample/txeddystone/MainActivity.java
-[A4]: https://github.com/google/exposure-notifications-android
+Note that it is possible that the spoofed messages broadcast by this app would be caught and recorded by actual contact tracing apps, but this should not cause any disturbance to the real contact tracing service. Those messages will effectively get ignored as they are never reported infected, similarly to the other "non-infected" traffic those apps see during their normal operation. However, do _not_ modify the app to spam the airwaves with very rapidly changing EphIds/RPIS, which could theoretically cause a Denial-of-Service to the nearby users.
 
 ## Backend server
 
@@ -105,7 +109,9 @@ The data exposed by the BLE contact tracing systems is called _pseudonymous_: na
 
 BLE-sniffing devices have already been deployed (see, e.g., the [links here][D1]) for other purposes. In addition, any smart phone also has the technical ability to act as as one (for any third-party application), but Google & Apple can block this if this privacy issue is seen as more serious in the future. However, there are millions of devices controlled by other organizations which can potentially be transformed into BLE sniffers with an OTA software/firmware update. Laptops & cars for sure, new WiFi APs maybe, the rest of the Internet-of-Things - security cameras, fridges, cars, etc. - anyone's guess.
 
-It is unclear to me how serious the various designers of the proposed contact tracing systems (i.e, the DP-3T group, Google, and Apple) think this weakness is. Is it a bug or a feature? If I had to select a click-bait headline, I would go for "side-channel attack vulnerability". Concerns about this have been raised before (e.g, [here][D1] and [here][D2]). As a general principle, the legal consequences of exploiting a weakness, or the requirement that the attacker needs some budget for hardware, are usually not considered good defenses in cybersecurity.
+As a general principle, the legal consequences of exploiting a weakness, or the requirement that the attacker needs some budget for hardware, are usually not considered good defenses in cybersecurity. I think this issue is serious, and in a click-bait headline, I would call it a "side-channel attack vulnerability".
+
+The designers of the various contact tracing systems see to be aware that this attack is possible, but it is unclear to me how serious they think it is. Concerns about this have been raised before (e.g, [here][D1] and [here][D2]). I have reported the existence of this PoC in the [DP-3T issue tracker][D1].
 
 [D1]: https://github.com/DP-3T/documents/issues/43
 [D2]: https://github.com/TCNCoalition/TCN/blob/ad400bc56d6b76e9fcec2901ae21206c0e2230ce/README.md#report-timespans-and-key-rotation
