@@ -107,7 +107,7 @@ _See also my [blog post on Medium][D3] for a longer technical background story o
 
 The data exposed by the BLE contact tracing systems is called _pseudonymous_: name, email, or other direct personal contact information is not known to the system, but the trails of locations themselves often single out an individual. For example, work and home locations are often easy to identify from the data.
 
-BLE-sniffing devices have already been deployed (see, e.g., the [links here][D1]) for other purposes. In addition, any smart phone also has the technical ability to act as as one (for any third-party application), but Google & Apple can block this if this privacy issue is seen as more serious in the future. However, there are millions of devices controlled by other organizations which can potentially be transformed into BLE sniffers with an OTA software/firmware update. Laptops & cars for sure, new WiFi APs maybe, the rest of the Internet-of-Things - security cameras, fridges, cars, etc. - anyone's guess.
+BLE-sniffing devices have already been deployed (see, e.g., the [links here][D1]) for other purposes. In addition, any smart phone also has the technical ability to act as as one (for any third-party application, see [this preprint for existing examples][D4]), but Google & Apple can block this if this privacy issue is seen as more serious in the future. However, there are millions of devices controlled by other organizations which can potentially be transformed into BLE sniffers with an OTA software/firmware update. Laptops & cars for sure, new WiFi APs maybe, the rest of the Internet-of-Things - security cameras, fridges, cars, etc. - anyone's guess.
 
 As a general principle, the legal consequences of exploiting a weakness, or the requirement that the attacker needs some budget for hardware, are usually not considered good defenses in cybersecurity. I think this issue is serious, and in a click-bait headline, I would call it a "side-channel attack vulnerability".
 
@@ -116,3 +116,4 @@ The designers of the various contact tracing systems see to be aware that this a
 [D1]: https://github.com/DP-3T/documents/issues/43
 [D2]: https://github.com/TCNCoalition/TCN/blob/ad400bc56d6b76e9fcec2901ae21206c0e2230ce/README.md#report-timespans-and-key-rotation
 [D3]: https://medium.com/indooratlas/why-use-bluetooth-for-contact-tracing-1585feb024dc
+[D4]: https://arxiv.org/pdf/2006.10719.pdf
