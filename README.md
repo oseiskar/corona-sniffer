@@ -51,9 +51,9 @@ Tested on Debian Stretch
 
 ## Android app
 
-A minimalistic app for sending various BLE beacon messages from an Android phone, including spoofed Apple/Google Exposure Notification and DP-3T EphId payloads. The app is intended for more convenient testing without installing official contract tracing apps or their test versions. 
+A minimalistic app for sending & receiving various BLE beacon messages from an Android phone, including spoofed Apple/Google Exposure Notification and DP-3T EphId payloads. The app is intended for more convenient testing without installing official contract tracing apps or their test versions. 
 
-The app can be installed through Android Studio or running `cd android; ./gradlew installDebug` - assuming you have working Android development environment installed. Make sure you have Bluetooth on in the phone and see Android Logcat for details of what the app is supposed to broadcast.
+The app can be installed through Android Studio or running `cd android; ./gradlew installSpooferDebug` (or `./gradlew installSnifferDebug`) - assuming you have working Android development environment installed. Make sure you have Bluetooth on in the phone and see Android Logcat for details of what the app is supposed to broadcast.
 
 Note that it is possible that the spoofed messages broadcast by this app would be caught and recorded by actual contact tracing apps, but this should not cause any disturbance to the real contact tracing service. Those messages will effectively get ignored as they are never reported infected, similarly to the other "non-infected" traffic those apps see during their normal operation. However, do _not_ modify the app to spam the airwaves with very rapidly changing EphIds/RPIS, which could theoretically cause a Denial-of-Service to the nearby users.
 
