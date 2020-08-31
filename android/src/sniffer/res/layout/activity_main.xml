@@ -12,9 +12,9 @@
 
         <TextView
             android:id="@+id/count_view"
-            android:gravity="center"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:text="0"
             android:textAppearance="@android:style/TextAppearance.Material.Display4" />
 
@@ -24,6 +24,14 @@
             android:gravity="center"
             android:text="devices near you are running GAEN"
             android:textAppearance="@android:style/TextAppearance.Material.Display1" />
+
+        <TextView
+            android:id="@+id/rssi_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:text=""/>
     </LinearLayout>
 
 
