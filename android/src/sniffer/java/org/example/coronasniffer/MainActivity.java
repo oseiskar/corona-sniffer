@@ -4,8 +4,11 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.RemoteException;
-import android.util.Log;
 import android.widget.TextView;
+
+import com.bosphere.filelogger.FL;
+import com.bosphere.filelogger.FLConfig;
+import com.bosphere.filelogger.FLConst;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -14,11 +17,10 @@ import org.altbeacon.beacon.BeaconParser;
 import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
 
+import java.io.File;
 import java.util.Collection;
 
 public class MainActivity extends Activity implements BeaconConsumer {
-    private static final String TAG = MainActivity.class.getSimpleName();
-
     private static final String BEACON_LAYOUT
             // = "m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"; // iBeacon
             // = "s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19";  // Eddystone UID
@@ -32,10 +34,10 @@ public class MainActivity extends Activity implements BeaconConsumer {
         @SuppressLint("DefaultLocale")
         @Override
         public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
-            Log.v(TAG, "didRangeBeaconsInRegion count: " + beacons.size());
+            FL.v("didRangeBeaconsInRegion count: " + beacons.size());
             countView.setText(String.format("%d", beacons.size()));
             for (Beacon b : beacons) {
-                Log.d(TAG, String.format("GAEN RPI %s, AEM %04x, RSSI %d (mean %g, n obs %d)",
+                FL.i(String.format("GAEN RPI %s, AEM %04x, RSSI %d (mean %g, n obs %d)",
                         b.getId1(),
                         b.getDataFields().get(0),
                         b.getRssi(),
@@ -59,13 +61,24 @@ public class MainActivity extends Activity implements BeaconConsumer {
         setContentView(R.layout.activity_main);
         countView = findViewById(R.id.count_view);
         rssiView = findViewById(R.id.rssi_view);
+
+        File logdir = new File(getExternalCacheDir(), "logs");
+        FL.init(new FLConfig.Builder(this)
+                .minLevel(FLConst.Level.V)
+                .logToFile(true)
+                .dir(logdir)
+                .defaultTag(MainActivity.class.getSimpleName())
+                .retentionPolicy(FLConst.RetentionPolicy.NONE)
+                .build());
+        FL.setEnabled(true);
+        FL.d("logging to " + logdir.getAbsolutePath());
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         if (!PermissionHelper.hasPermissions(this)) {
-            Log.d(TAG, "Request permissions");
+            FL.d("Request permissions");
             PermissionHelper.requestPermissions(this);
             return;
         }
@@ -80,7 +93,7 @@ public class MainActivity extends Activity implements BeaconConsumer {
             try {
                 beaconManager.stopMonitoringBeaconsInRegion(region);
             } catch (RemoteException e) {
-                Log.w(TAG, "Failed to stop scanning", e);
+                FL.w("Failed to stop scanning", e);
             }
             beaconManager.removeRangeNotifier(rangeNotifier);
             beaconManager.unbind(this);
@@ -89,7 +102,7 @@ public class MainActivity extends Activity implements BeaconConsumer {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
-        Log.d(TAG, "onRequestPermissionsResult");
+        FL.d( "onRequestPermissionsResult");
         if (!PermissionHelper.hasPermissions(this)) {
             throw new RuntimeException("Necessary permissions denied");
         }
@@ -107,11 +120,11 @@ public class MainActivity extends Activity implements BeaconConsumer {
     @Override
     public void onBeaconServiceConnect() {
         try {
-            Log.d(TAG, "Starting AltBeacon ranging");
+            FL.d("Starting AltBeacon ranging");
             beaconManager.startRangingBeaconsInRegion(region);
             beaconManager.addRangeNotifier(rangeNotifier);
         } catch (RemoteException e) {
-            Log.e(TAG, "Failed to start scanning", e);
+            FL.e( "Failed to start scanning", e);
         }
     }
 
