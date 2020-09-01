@@ -33,6 +33,7 @@ public class MainActivity extends Activity implements BeaconConsumer {
             // = "s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19";  // Eddystone UID
             = "s:0-1=fd6f,i:2-17,d:18-21"; // GAEN with AEM as the "d" field
 
+    private BeaconStats stats = new BeaconStats();
     private BeaconManager beaconManager;
     private TextView countView, rssiView;
     private Region region = new Region("dummy-id", null, null, null);
@@ -41,23 +42,14 @@ public class MainActivity extends Activity implements BeaconConsumer {
         @SuppressLint("DefaultLocale")
         @Override
         public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
-            FL.v("didRangeBeaconsInRegion count: " + beacons.size());
-            countView.setText(String.format("%d", beacons.size()));
-            for (Beacon b : beacons) {
-                FL.i(String.format("GAEN RPI %s, AEM %04x, RSSI %d (mean %g, n obs %d)",
-                        b.getId1(),
-                        b.getDataFields().get(0),
-                        b.getRssi(),
-                        b.getRunningAverageRssi(),
-                        b.getMeasurementCount()));
-            }
-            Beacon nearest = maxRssiBeacon(beacons);
+            BeaconStats.Entry nearest = stats.add(beacons);
+            countView.setText(String.format("%d", stats.getNearbyDeviceCount()));
             if (nearest == null) {
                 rssiView.setText("");
             } else {
-                rssiView.setText(String.format("Nearest mean RSSI: %d dBm\nRolling ID: %s",
-                        Math.round(nearest.getRunningAverageRssi()),
-                        nearest.getId1()));
+                rssiView.setText(String.format("Strongest RSSI: %d dBm\nRolling ID: %s",
+                        Math.round(nearest.maxRssi),
+                        nearest.rpi));
             }
         }
     };
@@ -127,6 +119,7 @@ public class MainActivity extends Activity implements BeaconConsumer {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        stats.flush();
         stopScanning();
     }
 
@@ -149,21 +142,6 @@ public class MainActivity extends Activity implements BeaconConsumer {
         } catch (RemoteException e) {
             FL.e( "Failed to start scanning", e);
         }
-    }
-
-    private static Beacon maxRssiBeacon(Collection<Beacon> beacons) {
-        // unfortunately, this is still the simples implementation of "array.maxBy(x -> x.rssi)"
-        // in common Android Java versions
-        double maxRssi = -1000;
-        Beacon maxElem = null;
-        for (Beacon b : beacons) {
-            double rssi = b.getRunningAverageRssi();
-            if (rssi > maxRssi) {
-                maxRssi = rssi;
-                maxElem = b;
-            }
-        }
-        return maxElem;
     }
 
     private Notification buildForegroundServiceNotification() {
