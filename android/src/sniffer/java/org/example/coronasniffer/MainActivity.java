@@ -2,6 +2,13 @@ package org.example.coronasniffer;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.widget.TextView;
@@ -62,6 +69,7 @@ public class MainActivity extends Activity implements BeaconConsumer {
         countView = findViewById(R.id.count_view);
         rssiView = findViewById(R.id.rssi_view);
 
+        // logging
         File logdir = new File(getExternalCacheDir(), "logs");
         FL.init(new FLConfig.Builder(this)
                 .minLevel(FLConst.Level.V)
@@ -82,13 +90,29 @@ public class MainActivity extends Activity implements BeaconConsumer {
             PermissionHelper.requestPermissions(this);
             return;
         }
-        ensureBeaconManager();
+
+        ensureScanning();
+    }
+
+    private void ensureScanning() {
+        if (beaconManager != null) return;
+        beaconManager = org.altbeacon.beacon.BeaconManager.getInstanceForApplication(this);
+        if (beaconManager.isAnyConsumerBound()) return;
+
+        // AltBeacon foreground service
+        beaconManager.enableForegroundServiceScanning(buildForegroundServiceNotification(), 112233);
+        beaconManager.setEnableScheduledScanJobs(false);
+        beaconManager.setBackgroundBetweenScanPeriod(0);
+        beaconManager.setBackgroundScanPeriod(1100);
+
+        beaconManager.getBeaconParsers().clear();
+        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(BEACON_LAYOUT));
+        // BeaconManager.setDebug(true);
+
         beaconManager.bind(this);
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
+    private void stopScanning() {
         if (beaconManager != null) {
             try {
                 beaconManager.stopMonitoringBeaconsInRegion(region);
@@ -101,20 +125,19 @@ public class MainActivity extends Activity implements BeaconConsumer {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopScanning();
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         FL.d( "onRequestPermissionsResult");
         if (!PermissionHelper.hasPermissions(this)) {
             throw new RuntimeException("Necessary permissions denied");
         }
-        ensureBeaconManager();
-    }
 
-    private void ensureBeaconManager() {
-        if (beaconManager != null) return;
-        beaconManager = org.altbeacon.beacon.BeaconManager.getInstanceForApplication(this);
-        beaconManager.getBeaconParsers().clear();
-        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(BEACON_LAYOUT));
-        // BeaconManager.setDebug(true);
+        ensureScanning();
     }
 
     @Override
@@ -141,5 +164,31 @@ public class MainActivity extends Activity implements BeaconConsumer {
             }
         }
         return maxElem;
+    }
+
+    private Notification buildForegroundServiceNotification() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+
+        Notification.Builder builder = new Notification.Builder(this)
+                .setSmallIcon(R.drawable.ic_fg_service)
+                .setContentTitle("BLE scanning active")
+                .setOngoing(true)
+                .setContentIntent(
+                        PendingIntent.getActivity(this, 0, intent, 0));
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel("dummy-id-2",
+                    "dummy-name", NotificationManager.IMPORTANCE_LOW); // no alert sound
+            channel.setDescription("dummy-descr");
+            NotificationManager notificationManager = (NotificationManager) getSystemService(
+                    Context.NOTIFICATION_SERVICE);
+            if (notificationManager == null)
+                throw new RuntimeException("could not create fg service");
+
+            notificationManager.createNotificationChannel(channel);
+            builder.setChannelId(channel.getId());
+        }
+        return builder.build();
     }
 }

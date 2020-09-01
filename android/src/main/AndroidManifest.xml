@@ -4,8 +4,12 @@
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <application android:label="corona-sniffer">
-        <activity android:name="MainActivity">
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <application
+        android:label="corona-sniffer">
+        <activity
+            android:name="MainActivity"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
