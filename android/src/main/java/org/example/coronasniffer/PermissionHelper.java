@@ -19,6 +19,7 @@ class PermissionHelper {
     static {
         List<String> p = new ArrayList<>();
         p.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        p.add(Manifest.permission.ACCESS_COARSE_LOCATION);
         p.add(Manifest.permission.BLUETOOTH);
         p.add(Manifest.permission.BLUETOOTH_ADMIN);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

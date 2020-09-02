@@ -8,6 +8,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -16,6 +17,11 @@ import android.widget.TextView;
 import com.bosphere.filelogger.FL;
 import com.bosphere.filelogger.FLConfig;
 import com.bosphere.filelogger.FLConst;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -37,6 +43,7 @@ public class MainActivity extends Activity implements BeaconConsumer {
     private BeaconManager beaconManager;
     private TextView countView, rssiView;
     private Region region = new Region("dummy-id", null, null, null);
+    private FusedLocationProviderClient locationProvider;
 
     private RangeNotifier rangeNotifier = new RangeNotifier() {
         @SuppressLint("DefaultLocale")
@@ -54,6 +61,16 @@ public class MainActivity extends Activity implements BeaconConsumer {
         }
     };
 
+    private LocationCallback locationCallback = new LocationCallback() {
+        @Override
+        public void onLocationResult(LocationResult r) {
+            Location location = r.getLastLocation();
+            FL.d("onLocationChanged %f, %f (%g m)",
+                    location.getLatitude(), location.getLongitude(), location.getAccuracy());
+            stats.onLocationChanged(location);
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,7 +81,8 @@ public class MainActivity extends Activity implements BeaconConsumer {
         // logging
         File logdir = new File(getExternalCacheDir(), "logs");
         FL.init(new FLConfig.Builder(this)
-                .minLevel(FLConst.Level.V)
+                //.minLevel(FLConst.Level.V)
+                .minLevel(FLConst.Level.D)
                 .logToFile(true)
                 .dir(logdir)
                 .defaultTag(MainActivity.class.getSimpleName())
@@ -72,6 +90,8 @@ public class MainActivity extends Activity implements BeaconConsumer {
                 .build());
         FL.setEnabled(true);
         FL.d("logging to " + logdir.getAbsolutePath());
+
+        locationProvider = LocationServices.getFusedLocationProviderClient(this);
     }
 
     @Override
@@ -102,6 +122,20 @@ public class MainActivity extends Activity implements BeaconConsumer {
         // BeaconManager.setDebug(true);
 
         beaconManager.bind(this);
+
+        // location listener
+        try {
+            LocationRequest locationRequest = LocationRequest.create()
+                    .setFastestInterval(5 * 1000) // ms
+                    .setInterval(30 * 1000) // ms
+                    .setSmallestDisplacement(30f) // meters
+                    //.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+                    .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+            locationProvider.requestLocationUpdates(locationRequest, locationCallback, getMainLooper());
+        } catch (SecurityException e) {
+            throw new RuntimeException("permissions altered while app running", e);
+        }
     }
 
     private void stopScanning() {
@@ -113,6 +147,9 @@ public class MainActivity extends Activity implements BeaconConsumer {
             }
             beaconManager.removeRangeNotifier(rangeNotifier);
             beaconManager.unbind(this);
+        }
+        if (locationProvider != null) {
+            locationProvider.removeLocationUpdates(locationCallback);
         }
     }
 

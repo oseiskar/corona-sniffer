@@ -1,6 +1,6 @@
 package org.example.coronasniffer;
 
-import android.annotation.SuppressLint;
+import android.location.Location;
 
 import com.bosphere.filelogger.FL;
 
@@ -16,7 +16,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 class BeaconStats {
-    private static final long PRUNE_AGE_SECONDS = 60 * 10;
+    // RPI window is 10 minutes. use 11 to avoid any clock sync issues
+    private static final long PRUNE_AGE_SECONDS = 60 * 11;
+    // count devices seen during this window as "recent", for showing the number of
+    // currently active devices
     private static final long RECENT_AGE_SECONDS = 30;
 
     private static final String TAG = BeaconStats.class.getSimpleName();
@@ -29,19 +32,37 @@ class BeaconStats {
         int nScans;
         double meanRssi;
 
-        final Date firstSeen;
-        Date lastSeen;
+        final FirstOrLast first;
+        FirstOrLast last;
 
-        Entry(Beacon b) {
+        static class FirstOrLast {
+            Date seen;
+            Location location;
+
+            @Override
+            public String toString() {
+                Map<String, String> json = new TreeMap<>();
+                if (location != null) {
+                    json.put("latitude", "" + location.getLatitude());
+                    json.put("longitude", "" + location.getLongitude());
+                    json.put("accuracy", "" + Math.round(location.getAccuracy()));
+                }
+                json.put("seen", '"' + ISO8601.format(seen) + '"');
+                return toJson(json);
+            }
+        }
+
+        Entry(Beacon b, Location location) {
             // NOTE: AltBeacon has rather hacky logic in toString
             rpi = b.getId1().toHexString().replace("0x", "");
             aem = String.format("%08x", b.getDataFields().get(0));
             nScans = 1;
             meanRssi = b.getRunningAverageRssi();
             maxRssi = Math.max(b.getRssi(), (int) Math.round(meanRssi));
-            firstSeen = new Date();
-            lastSeen = firstSeen;
-
+            first = new FirstOrLast();
+            first.location = location;
+            first.seen = new Date();
+            last = first;
             FL.v(TAG, toString());
         }
 
@@ -50,7 +71,7 @@ class BeaconStats {
             // some sort of mixture of running means, close enough
             meanRssi = (meanRssi * nScans + next.meanRssi * next.nScans) / (nScans + next.nScans);
             nScans += next.nScans;
-            lastSeen = next.lastSeen;
+            last = next.last;
         }
 
         @Override
@@ -61,12 +82,16 @@ class BeaconStats {
             json.put("maxRssi", "" + maxRssi);
             json.put("nScans", "" + nScans);
             json.put("meanRssi", "" + String.format("%.4g", meanRssi));
-            json.put("firstSeen", '"' + ISO8601.format(firstSeen) + '"');
-            json.put("lastSeen", '"' + ISO8601.format(lastSeen) + '"');
+            json.put("first", first.toString());
+            json.put("last", last.toString());
+            return toJson(json);
+        }
+
+        private static String toJson(Map<String, String> map) {
             StringBuilder sb = new StringBuilder();
             sb.append('{');
             boolean first = true;
-            for (Map.Entry<String, String> e : json.entrySet()) {
+            for (Map.Entry<String, String> e : map.entrySet()) {
                 if (first) first = false;
                 else sb.append(',');
                 sb.append('"');
@@ -83,11 +108,12 @@ class BeaconStats {
         }
 
         long ageSeconds() {
-            return (new Date().getTime() - lastSeen.getTime()) / 1000;
+            return (new Date().getTime() - last.seen.getTime()) / 1000;
         }
     }
 
     private Map<String, Entry> entries = new HashMap<>();
+    private Location lastLocation = null;
 
     Entry add(Collection<Beacon> beacons) {
         FL.v(TAG,"beacon batch size %d, map size %d", beacons.size(), entries.size());
@@ -96,7 +122,7 @@ class BeaconStats {
         Entry maxElem = null;
 
         for (Beacon b : beacons) {
-            Entry entry = new Entry(b);
+            Entry entry = new Entry(b, lastLocation);
             Entry prev = entries.get(entry.rpi);
 
             if (entry.maxRssi > maxRssi) {
@@ -119,6 +145,10 @@ class BeaconStats {
     void flush() {
         for (Entry e : entries.values()) e.log();
         entries.clear();
+    }
+
+    void onLocationChanged(Location location) {
+        lastLocation = location;
     }
 
     private void prune() {
