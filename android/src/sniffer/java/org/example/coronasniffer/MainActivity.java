@@ -129,8 +129,8 @@ public class MainActivity extends Activity implements BeaconConsumer {
                     .setFastestInterval(5 * 1000) // ms
                     .setInterval(30 * 1000) // ms
                     .setSmallestDisplacement(30f) // meters
-                    //.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-                    .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                    .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+                    //.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
             locationProvider.requestLocationUpdates(locationRequest, locationCallback, getMainLooper());
         } catch (SecurityException e) {
