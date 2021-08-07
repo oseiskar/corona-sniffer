@@ -12,7 +12,7 @@ def parse_gaen_export_bin(in_stream):
     # see https://github.com/google/exposure-notifications-server/blob/v0.6.1/examples/export/README.md
     # and https://github.com/google/exposure-notifications-server/blob/v0.6.1/internal/pb/export/export.proto
     in_stream.read(16) # drop first 16 bytes
-    doc = parse_stream_with_spec(in_stream, parse_spec('1:fixed64,2:fixed64,7:[1:hex,3:int32,4:int32,5:int,6:sint32]'))
+    doc = parse_stream_with_spec(in_stream, parse_spec('1:fixed64,2:fixed64,7:[1:hex]'))
     for e in doc['7']:
         yield({
             'diagnosisKey': e['1'],
