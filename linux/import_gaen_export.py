@@ -20,6 +20,12 @@ def parse_gaen_export_bin(in_stream):
             'maxUnixTime': doc['2'],
         })
 
+def binary_stdin():
+    try:
+        return sys.stdin.buffer # Python 3
+    except:
+        return sys.stdin # Python 2
+
 if __name__ == '__main__':
     import argparse, json, sys
     p = argparse.ArgumentParser(__doc__)
@@ -27,7 +33,7 @@ if __name__ == '__main__':
     p.add_argument('--debug', action='store_true')
     args = p.parse_args()
 
-    for entry in parse_gaen_export_bin(sys.stdin):
+    for entry in parse_gaen_export_bin(binary_stdin()):
         if args.server is not None:
             from agent import post
             post(entry, args.server, debug=args.debug)
