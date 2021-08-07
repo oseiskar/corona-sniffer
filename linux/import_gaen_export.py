@@ -24,11 +24,12 @@ if __name__ == '__main__':
     import argparse, json, sys
     p = argparse.ArgumentParser(__doc__)
     p.add_argument('--server', help='server URL, .e.g, http://localhost:3000/resolve/apple_google_en')
+    p.add_argument('--debug', action='store_true')
     args = p.parse_args()
 
     for entry in parse_gaen_export_bin(sys.stdin):
         if args.server is not None:
             from agent import post
-            post(entry, args.server, debug=True)
+            post(entry, args.server, debug=args.debug)
         else:
             print(json.dumps(entry))
