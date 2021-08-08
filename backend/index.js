@@ -74,15 +74,15 @@ async function resolveRollingIds(ctx, { resolvedId, rollingIds }) {
   if (!rollingIds || rollingIds.length === 0) {
     ctx.throw(400, 'No IDs generated');
   } else {
-    LOG.INFO(`Resolving ${resolvedId} to ${rollingIds.length} rolling ID(s)`);
-    rollingIds.forEach((id) => LOG.DEBUG(id));
+    LOG.DEBUG(`Resolving ${resolvedId} to ${rollingIds.length} rolling ID(s)`);
+    // rollingIds.forEach((id) => LOG.DEBUG(id));
     await db.updateResolved({ resolvedId, rollingIds });
     ctx.body = 'OK';
   }
 }
 
 router
-  .post('/report', (ctx) => {
+  .post('/report', async (ctx) => {
     const { agent, scan } = ctx.request.body;
     const rollingId = parseRollingId(scan);
 
@@ -94,8 +94,7 @@ router
         agentJson: agent
       };
       LOG.DEBUG(`inserting ${JSON.stringify(row)}`);
-      // no await: fire & forget
-      db.insert(row);
+      await db.insert(row);
     } else {
       LOG.WARN('skipping report with no ID');
     }

@@ -50,7 +50,7 @@ function databaseApi(db) {
   function promiseRun(...args) {
     // console.log(...args);
     return new Promise((resolve, reject) => db.run(...args,
-      (err) => (err ? reject(err) : resolve(true))));
+      function cb(err) { return (err ? reject(err) : resolve(this)); }));
   }
 
   return {
@@ -79,7 +79,11 @@ function databaseApi(db) {
       const inList = rollingIds.map(() => '?').join(',');
       return promiseRun(`
         UPDATE contacts SET resolved_id = ? WHERE rolling_id IN (${inList})`,
-      [validated.id(resolvedId)].concat(rollingIds.map(validated.id)));
+      [validated.id(resolvedId)].concat(rollingIds.map(validated.id))).then((result) => {
+        if (result.changes) {
+          console.log(`resolved ID ${resolvedId} to ${result.changes} row(s)`);
+        }
+      });
     },
     getResolved(each, finalize) {
       db.each(`
